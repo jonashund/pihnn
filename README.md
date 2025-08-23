@@ -12,9 +12,7 @@
 
 PIHNNs can be used to efficiently learn solutions of PDEs exploiting their holomorphic representation.  
 
-Author: [Matteo Calafà](https://matteocalafa.com/), PhD at [DTU](https://www.dtu.dk/english/) and former research assistant at [Aarhus University](https://mpe.au.dk/en/).
-
-This project is supported by the Aarhus University Research Foundation, Denmark.
+Written by [Matteo Calafà](https://matteocalafa.com/), former research assistant at [Aarhus University](https://mpe.au.dk/en/), and supported by the Aarhus University Research Foundation.
 
 Documentation
 --------------
