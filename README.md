@@ -1,6 +1,6 @@
-This project is an extension of [Matteo Calafà's](https://matteocalafa.com/) [PIHNN project](https://github.com/teocala/pihnn).
+This project is an extension of the [PIHNN project](https://github.com/teocala/pihnn).
 
-The extensions are work in progress by Nicolas Cuenca and Jonas Hund.
+The extensions are work in progress by Nicolas Cuenca, Jonas Hund and Tito Andriollo.
 
 Remarks:
     - changes are pushed to the devo_Nicolas branch
