@@ -1,8 +1,9 @@
 import torch
 import math
+import pihnn.nn as nn
 
 
-class enriched_PIHNN_devo(DD_PIHNN):
+class enriched_PIHNN_devo(nn.DD_PIHNN):
     """
     This PIHNN class builds on the enriched_PIHNN class from Matteo Calafà's pihnn package
     """
