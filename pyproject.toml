@@ -7,7 +7,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pihnn"
-authors = [{name = "Matteo Calafa'", email = "matcal@dtu.dk"}]
+authors = [
+    { name = "Jonas Hund", email = "jonas.hund@mpe.au.dk" },
+    { name = "Nicolas Cuenca", email = "nicolas.cuenca@sigma-clermont.fr" },
+    { name = "Tito Andriollo", email = "titoan@mpe.au.dk" },
+    ]
 description = "Physics-informed holomorphic neural networks"
 version = "1.1"
 readme = "README.md"
