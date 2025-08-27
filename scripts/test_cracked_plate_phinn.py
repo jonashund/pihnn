@@ -19,7 +19,6 @@ import pihnn.graphics as graphics
 import pihnn.bc as bc
 import pihnn.crack_finding as cf
 
-
 # Network parameters
 n_epochs = 6000  # Number of epochs
 learn_rate = 1e-4  # Initial learning rate
@@ -28,19 +27,17 @@ units = [1, 10, 10, 10, 1]  # Units in each network layer
 np_train = 300  # Number of training points on domain boundary
 np_test = 20  # Number of test points on the domain boundary
 beta = 0.5  # Initialization parameter
-gauss = 3  # Initalization parameter
-
+gauss = 3  # Initialization parameter
 
 # -----------------------------------
-# Domaine géométrique et conditions aux limites
+# Geometry and boundary conditions
 # -----------------------------------
+h = 10  # 0.5*height of the domain
+l = 10  # 0.5*length of the domain
+n_segments = 50  # number of segments for each line
 
-h = 10  # Demi-hauteur du domaine
-l = 10  # Demi-longueur du domaine
-n_segments = 50  # Nombre de segments pour chaque ligne
-
-# Contraintes imposées en haut et en bas (traction/compression pure verticale)
-sig_ext_t = 1j  # Traction en haut : σ_yy = +1
+# imposed constraints on top and bottom (traction/pure vertical compression)
+sig_ext_t = 1j  # traction on top: σ_yy = +1
 sig_ext_b = -1j
 
 line1 = geom.line(P1=[-l, -h], P2=[l, -h], bc_type=bc.stress_bc(), bc_value=sig_ext_b)
@@ -49,7 +46,7 @@ line3 = geom.line(P1=[-l, h], P2=[l, h], bc_type=bc.stress_bc(), bc_value=sig_ex
 line4 = geom.line(P1=[-l, h], P2=[-l, -h], bc_type=bc.stress_bc(), bc_value=0 + 0j)
 
 # ----------------------------------------------------------
-# Fissure horizontale au centre du domaine, de -3.5 à +3.5
+# horizontal crack in center of domain (-3 to 3)
 # ----------------------------------------------------------
 crack = geom.line(P1=-3 - 0j, P2=3 + 0j, bc_type=bc.stress_bc())
 
@@ -66,7 +63,6 @@ sig_xy_target = torch.tensor(
 n_epochs = 2000  # Number of epochs
 learn_rate = 1e-5  # Initial learning rate
 scheduler_apply = [500, 1000, 1500]
-
 
 line1 = geom.line(P1=[-l, -h], P2=[l, -h], bc_type=bc.stress_bc(), bc_value=sig_ext_b)
 line2 = geom.line(P1=[l, -h], P2=[l, h], bc_type=bc.stress_bc(), bc_value=0 + 0j)
