@@ -23,11 +23,9 @@ gauss = 3  # Initialization parameter
 h = 10  # Half-height of the domain
 l = 10  # Half-length of the domain
 
-
 # Applied stresses at top and bottom (pure vertical tension/compression)
 sig_ext_t = 1j  # Top tension: σ_yy = +1
 sig_ext_b = -1j
-
 
 line1 = geom.line(P1=[-l, -h], P2=[l, -h], bc_type=bc.stress_bc(), bc_value=sig_ext_b)
 line2 = geom.line(P1=[l, -h], P2=[l, h], bc_type=bc.stress_bc(), bc_value=0 + 0j)
@@ -43,21 +41,22 @@ z2N = z2 / (l)
 
 crack = geom.line(P1=z1N, P2=z2N, bc_type=bc.stress_bc())
 
-# # Definition of crack tips
+# Definition of crack tips
 crack.add_crack_tip(tip_side=0)  # Left tip
 crack.add_crack_tip(tip_side=1)  # Right tip
 
-# # Construction of the complete boundary with Rice-type XFEM enrichment
-
+# Construction of the complete boundary with Rice-type XFEM enrichment
 boundary = geom.boundary(
-    [line1, line2, line3, line4, crack], np_train, np_test, enrichment="rice"
+    curves=[line1, line2, line3, line4, crack],
+    np_train=np_train,
+    np_test=np_test,
+    enrichment="rice",
 )
 
 # Definition of NN
 model = nn.enriched_PIHNN("km", units, boundary)
 
 if __name__ == "__main__":
-
     model.initialize_weights(
         "exp", beta, boundary.extract_points(10 * np_train)[0], gauss
     )
