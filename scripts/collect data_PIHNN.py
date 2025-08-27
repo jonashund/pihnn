@@ -4,7 +4,6 @@ Test from Section 4.2 in https://doi.org/10.1016/j.engfracmech.2025.111133
 
 import torch
 import pihnn.nn as nn
-import pihnn.utils as utils
 import pihnn.geometries as geom
 import pihnn.graphics as graphics
 import pihnn.bc as bc
