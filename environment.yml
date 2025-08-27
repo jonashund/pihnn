@@ -1,4 +1,4 @@
-name: pihnn-env
+name: pihnn-devo-env
 
 channels:
   - anaconda
@@ -9,6 +9,7 @@ dependencies:
   - pip
   - pip:
       - torch --index-url https://download.pytorch.org/whl/cu12.4
+      - git+https://github.com/teocala/pihnn.git
   - conda-build
   - conda-verify
   - sphinx
