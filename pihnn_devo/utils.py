@@ -1,5 +1,4 @@
 import torch
-import pihnn.nn as nn
 import pihnn.bc as bc
 import pihnn.utils as utils
 import numpy as np
@@ -90,7 +89,7 @@ def reg_loss(model, limit=1, weight=100.0):
     return penalties[0] + penalties[1]
 
 
-def train_devo(
+def train_devo_adam(
     sig_xx_target,
     sig_yy_target,
     sig_xy_target,
@@ -215,4 +214,74 @@ def train_devo(
     torch.save(model.state_dict(), dir + "model.dict")
     print("# Saved neural network model at " + os.path.abspath(dir + "model.dict"))
 
-    return loss_epochs, loss_epochs_test, z1_list
+    return loss_epochs, loss_epochs_test, z1_list, z2_list
+
+
+def train_devo_L_BFGS(
+    sig_xx_target,
+    sig_yy_target,
+    sig_xy_target,
+    boundary,
+    model,
+    n_epochs,
+    learn_rate,
+    dir="results/",
+    apply_adaptive_sampling=None,
+):
+    """
+    Train using L-BFGS optimizer for moving crack tips (z1, z2).
+    """
+    optimizer = torch.optim.LBFGS(
+        model.parameters(), lr=learn_rate, max_iter=10, history_size=100
+    )
+
+    loss_epochs = []
+    loss_epochs_test = []
+    z1_list = []
+    z2_list = []
+
+    for epoch_id in (pbar := tqdm(range(n_epochs))):
+        z1 = complex(model.z1.item())
+        z2 = complex(model.z2.item())
+        model.update_boundary()
+        z1_list.append(z1)
+        z2_list.append(z2)
+        print("z1 : ", z1)
+        print("z2 : ", z2)
+        if epoch_id == apply_adaptive_sampling and epoch_id != 0:
+            utils.RAD_sampling(boundary, model)
+
+        def closure():
+            optimizer.zero_grad()
+            model.zero_grad()
+            loss = PIHNNloss_devo(
+                sig_xx_target, sig_yy_target, sig_xy_target, boundary, model, "training"
+            )
+            loss.backward(retain_graph=True)
+            return loss
+
+        loss = optimizer.step(closure)
+
+        # save the losses
+        loss_epochs.append(loss.cpu().item())
+        loss_test = PIHNNloss_devo(
+            sig_xx_target, sig_yy_target, sig_xy_target, boundary, model, "test"
+        )
+        loss_epochs_test.append(loss_test.cpu().item())
+
+        with torch.autograd.no_grad():
+            if epoch_id % 10 == 0:
+                pbar.set_postfix_str(
+                    f"train: {loss_epochs[-1]:.2E}, test: {loss_epochs_test[-1]:.2E}"
+                )
+
+    # save results
+    loss = np.column_stack((loss_epochs, loss_epochs_test))
+    if not dir.endswith("/"):
+        dir += "/"
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+    np.savetxt(dir + "loss.dat", loss)
+    torch.save(model.state_dict(), dir + "model.dict")
+
+    return loss_epochs, loss_epochs_test, z1_list, z2_list

@@ -9,12 +9,12 @@ import pihnn_devo.nn as nn_devo
 import pihnn_devo.utils as utils_devo
 
 # Network parameters
-n_epochs = 600  # Number of epochs
-learn_rate = 1e-2  # Initial learning rate
-scheduler_apply = [500]  # At which epoch to execute scheduler
+n_epochs = 500  # Number of epochs
+learn_rate = 1e-3  # Initial learning rate
+scheduler_apply = []  # At which epoch to execute scheduler
 units = [1, 10, 10, 10, 1]  # Units in each network layer
-np_train = 200  # Number of training points on domain boundary
-np_test = 20  # Number of test points on the domain boundary
+np_train = 150  # Number of training points on domain boundary
+np_test = 10  # Number of test points on the domain boundary
 beta = 0.5  # Initialization parameter
 gauss = 3  # Initialization parameter
 
@@ -25,66 +25,15 @@ l = 10  # Half-length of the domain
 sig_ext_t = 1j
 sig_ext_b = -1j
 
-sig_xx_target = torch.tensor(
-    [
-        -1.1013e-01,
-        -7.8078e-02,
-        2.9673e-02,
-        -8.2760e-05,
-        -1.5666e-01,
-        -1.8831e-01,
-        8.3253e-01,
-        2.9214e-01,
-        2.9209e-01,
-        8.3255e-01,
-        -1.8829e-01,
-        -1.5662e-01,
-        -1.5070e-04,
-        2.9627e-02,
-        -7.8077e-02,
-        -1.1011e-01,
-    ]
-)
-sig_yy_target = torch.tensor(
-    [
-        0.9746,
-        0.8055,
-        0.8462,
-        1.2329,
-        1.0684,
-        0.8392,
-        0.8325,
-        1.2270,
-        1.2270,
-        0.8326,
-        0.8392,
-        1.0684,
-        1.2330,
-        0.8463,
-        0.8055,
-        0.9746,
-    ]
-)
-sig_xy_target = torch.tensor(
-    [
-        1.0912e-01,
-        1.5553e-01,
-        -2.9327e-01,
-        -7.9474e-04,
-        7.7158e-02,
-        1.8727e-01,
-        8.3253e-01,
-        -3.0714e-02,
-        -3.0711e-02,
-        8.3255e-01,
-        1.8730e-01,
-        7.7203e-02,
-        -7.7285e-04,
-        -2.9323e-01,
-        1.5558e-01,
-        1.0919e-01,
-    ]
-)
+sig_xx_target = torch.tensor([-0.0738, -0.0738, -0.0738, -0.0738])
+sig_yy_target = torch.tensor([1.0509, 1.0509, 1.0509, 1.0509])
+sig_xy_target = torch.tensor([-0.1081, 0.1081, 0.1081, -0.1081])
+
+z1 = 0 - 0j
+z2 = 3 + 0j
+
+z1N = z1 / (l)
+z2N = z2 / (l)
 
 line1 = geom.line(P1=[-l, -h], P2=[l, -h], bc_type=bc.stress_bc(), bc_value=sig_ext_b)
 line2 = geom.line(P1=[l, -h], P2=[l, h], bc_type=bc.stress_bc(), bc_value=0 + 0j)
@@ -92,17 +41,10 @@ line2 = geom.line(P1=[l, -h], P2=[l, h], bc_type=bc.stress_bc(), bc_value=0 + 0j
 line3 = geom.line(P1=[-l, h], P2=[l, h], bc_type=bc.stress_bc(), bc_value=sig_ext_t)
 line4 = geom.line(P1=[-l, h], P2=[-l, -h], bc_type=bc.stress_bc(), bc_value=0 + 0j)
 
-z1 = -0 - 0j
-z2 = 3.5 + 3.5j
-
-z1N = z1 / (l)
-z2N = z2 / (l)
-
 crack = geom.line(P1=z1N, P2=z2N, bc_type=bc.stress_bc())
 
 crack.add_crack_tip(tip_side=0)  # Left tip
 crack.add_crack_tip(tip_side=1)  # Right tip
-
 
 boundary = geom.boundary(
     curves=[line1, line2, line3, line4, crack],
@@ -112,12 +54,17 @@ boundary = geom.boundary(
 )
 
 # === Training loop over multiple runs ===
-n_runs = 20  # number of repetitions
+n_runs = 10  # number of repetitions
 
 final_losses_train = []
 final_losses_test = []
 final_z1 = []
 final_z2 = []
+
+best_test_loss = float("inf")
+best_z1 = None
+best_z2 = None
+best_run = -1
 
 for i in range(n_runs):
     print("\n=== Run {} / {} ===".format(i + 1, n_runs))
@@ -140,7 +87,7 @@ for i in range(n_runs):
         "exp", beta, boundary.extract_points(10 * np_train)[0], gauss
     )
 
-    loss_train, loss_test, _ = utils_devo.train_devo(
+    loss_train, loss_test, ListeZ1, ListeZ2 = utils_devo.train_devo_adam(
         sig_xx_target,
         sig_yy_target,
         sig_xy_target,
@@ -165,6 +112,13 @@ for i in range(n_runs):
     print("z2 : ", z2_val)
     print("Final train loss:", loss_train[-1])
     print("Final test loss :", loss_test[-1])
+
+    # Check if this is the best test loss
+    if loss_test[-1] < best_test_loss:
+        best_test_loss = loss_test[-1]
+        best_z1 = z1_val
+        best_z2 = z2_val
+        best_run = i + 1
 
 # Average of the final losses
 avg_train_loss = sum(final_losses_train) / len(final_losses_train)
