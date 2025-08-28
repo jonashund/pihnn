@@ -2,8 +2,12 @@ import torch
 import math
 import pihnn.nn as nn
 
+from pihnn_devo.config import set_device
 
-class enriched_PIHNN_devo(nn.DD_PIHNN):
+device = set_device()  # Shared with other scripts of the library
+
+
+class enriched_pihnn_devo(nn.DD_PIHNN):
     """
     This PIHNN class builds on the enriched_PIHNN class from Matteo Calafà's pihnn package
     """
@@ -18,7 +22,7 @@ class enriched_PIHNN_devo(nn.DD_PIHNN):
         has_bias=True,
     ):
 
-        super(enriched_PIHNN_devo, self).__init__(
+        super(enriched_pihnn_devo, self).__init__(
             PDE, units, boundary, material, activation, has_bias
         )
         if PDE not in ["km", "km-so"]:
@@ -127,7 +131,7 @@ class enriched_PIHNN_devo(nn.DD_PIHNN):
             z_dd = z
 
         if self.enrichment == "williams":
-            phi = super(enriched_PIHNN_devo, self).forward(z_dd)
+            phi = super(enriched_pihnn_devo, self).forward(z_dd)
             phi = phi + self.apply_williams(z_dd)
         elif self.enrichment == "rice":
             phi = self.apply_rice(z_dd)
@@ -173,9 +177,9 @@ class enriched_PIHNN_devo(nn.DD_PIHNN):
     def apply_rice(self, z):
 
         t = torch.exp(-1j * self.crack_angle) * (z - self.crack_coords)
-        phi = super(enriched_PIHNN_devo, self).forward(t)  # phi = [f,g]
+        phi = super(enriched_pihnn_devo, self).forward(t)  # phi = [f,g]
         phi_h = torch.conj(
-            super(enriched_PIHNN_devo, self).forward(torch.conj(t))
+            super(enriched_pihnn_devo, self).forward(torch.conj(t))
         )  # phi_h = [\check{f},\check{g}]
 
         sigma = (
@@ -192,7 +196,7 @@ class enriched_PIHNN_devo(nn.DD_PIHNN):
             omega_0 = (phi_h[0] * sigma - phi_h[1]) * self.has_crack + phi[1] * (
                 ~self.has_crack
             )
-            varphi_t_0 = derivative(varphi_0, t, holom=True)
+            varphi_t_0 = nn.derivative(varphi_0, t, holom=True)
             psi_0 = omega_0 - t * varphi_t_0
             # Roto-translations
             varphi = torch.exp(1j * self.crack_angle) * varphi_0
@@ -212,7 +216,7 @@ class enriched_PIHNN_devo(nn.DD_PIHNN):
             omega_t_0 = (phi_h[0] / sigma - phi_h[1]) * self.has_crack + phi[1] * (
                 ~self.has_crack
             )
-            varphi_tt_0 = derivative(varphi_t_0, t, holom=True)
+            varphi_tt_0 = nn.derivative(varphi_t_0, t, holom=True)
             psi_t_0 = omega_t_0 - t * varphi_tt_0 - varphi_t_0
             # Roto-translations
             varphi_z = varphi_t_0
