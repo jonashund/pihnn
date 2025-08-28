@@ -7,23 +7,24 @@ import pihnn.nn as nn
 import pihnn.geometries as geom
 import pihnn.graphics as graphics
 import pihnn.bc as bc
+import pihnn.utils as utils
 import pihnn_devo.utils as utils_devo
 
-# Network parameters
-n_epochs = 10000  # Number of epochs
-learn_rate = 1e-3  # Initial learning rate
+# network parameters
+n_epochs = 50  # number of epochs
+# n_epochs = 10000  # TODO: Remove line after debugging
+learn_rate = 1e-3  # initial learning rate
 scheduler_apply = [2000, 4500, 7000, 8000, 9500]
-units = [1, 10, 10, 10, 1]  # Units in each network layer
-np_train = 250  # Number of training points on domain boundary
-np_test = 20  # Number of test points on the domain boundary
-beta = 0.5  # Initialization parameter
-gauss = 3  # Initialization parameter
+units = [1, 10, 10, 10, 1]  # units in each network layer
+np_train = 250  # number of training points on domain boundary
+np_test = 20  # number of test points on the domain boundary
+beta = 0.5  # initialization parameter
+gauss = 3  # initialization parameter
 
+h = 10  # half-height of the domain
+l = 10  # half-length of the domain
 
-h = 10  # Half-height of the domain
-l = 10  # Half-length of the domain
-
-# Applied stresses at top and bottom (pure vertical tension/compression)
+# applied stresses at top and bottom (pure vertical tension/compression)
 sig_ext_t = 1j  # Top tension: σ_yy = +1
 sig_ext_b = -1j
 
@@ -56,19 +57,20 @@ boundary = geom.boundary(
 # Definition of NN
 model = nn.enriched_PIHNN("km", units, boundary)
 
-if __name__ == "__main__":
-    model.initialize_weights(
-        "exp", beta, boundary.extract_points(10 * np_train)[0], gauss
-    )
-    loss_train, loss_test = utils_devo.train(
-        boundary, model, n_epochs, learn_rate, scheduler_apply
-    )
-    graphics.plot_loss(loss_train, loss_test)
-    tria = graphics.get_triangulation(boundary)
-    graphics.plot_sol(
-        tria, model, apply_crack_bounds=True
-    )  # We bound the crack singularities for the plot
-
+model.initialize_weights("exp", beta, boundary.extract_points(10 * np_train)[0], gauss)
+loss_train, loss_test = utils.train(
+    boundary=boundary,
+    model=model,
+    n_epochs=n_epochs,
+    learn_rate=learn_rate,
+    scheduler_apply=scheduler_apply,
+    dir="../test/collect_data_pihnn/",  # TODO: Change directory
+)
+graphics.plot_loss(loss_train, loss_test)
+tria = graphics.get_triangulation(boundary)
+graphics.plot_sol(
+    tria, model, apply_crack_bounds=True
+)  # We bound the crack singularities for the plot
 
 x_vals = torch.tensor([-6.0, -3.0, 3.0, 6.0])
 y_vals = torch.tensor([6.0, 3.0, -3.0, -6.0])  # added -3.0 and 3.0
@@ -80,7 +82,6 @@ y_vals_norm = y_vals / l
 # Construction of z_data with normalized values
 z_data = torch.cat([x_vals_norm + 1j * y for y in y_vals_norm])
 z_data = z_data.to(torch.cfloat).requires_grad_(True)
-
 
 # Expected values (e.g. zero stress at free points)
 sig_xx_target, sig_yy_target, sig_xy_target, _, _ = model(z_data, real_output=True)
