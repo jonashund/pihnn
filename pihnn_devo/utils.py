@@ -46,20 +46,20 @@ def data_loss(sig_xx_target, sig_yy_target, sig_xy_target, model, weight_xy=1):
     l = 10
 
     x_vals = torch.tensor([-6.0, -3.0, 3.0, 6.0])
-    y_vals = torch.tensor([6.0, 3.0, -3.0, -6.0])  # ajout de -3.0 et 3.0
+    y_vals = torch.tensor([6.0, 3.0, -3.0, -6.0])
 
-    # Normalisation
+    # normalize the coordinates
     x_vals_norm = x_vals / l
     y_vals_norm = y_vals / l
 
-    # Construction de z_data avec les valeurs normalisées
+    # build z_data with normalized coordinates
     z_data = torch.cat([x_vals_norm + 1j * y for y in y_vals_norm])
     z_data = z_data.to(torch.cfloat).requires_grad_(True)
 
     sig_xx, sig_yy, sig_xy, _, _ = model(z_data, real_output=True)
 
     # Weighted MSE loss
-    L = utils.MSE(sig_xx, sig_xx_target)
+    L = utils.MSE(value=sig_xx, true_value=sig_xx_target)
     L += utils.MSE(sig_yy, sig_yy_target)
     L += weight_xy * utils.MSE(sig_xy, sig_xy_target)
 
@@ -183,7 +183,12 @@ def train_devo_adam(
         model.zero_grad()
 
         loss = PIHNNloss_devo(
-            sig_xx_target, sig_yy_target, sig_xy_target, boundary, model, "training"
+            sig_xx_target=sig_xx_target,
+            sig_yy_target=sig_yy_target,
+            sig_xy_target=sig_xy_target,
+            boundary=boundary,
+            model=model,
+            t="training",
         )
         loss.backward(retain_graph=True)
         optimizer.step()
