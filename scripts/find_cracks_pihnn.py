@@ -9,7 +9,8 @@ import pihnn_devo.nn as nn_devo
 import pihnn_devo.utils as utils_devo
 
 # Network parameters
-n_epochs = 500  # Number of epochs
+# n_epochs = 500  # Number of epochs
+n_epochs = 10  # Number of epochs for debugging
 learn_rate = 1e-3  # Initial learning rate
 scheduler_apply = []  # At which epoch to execute scheduler
 units = [1, 10, 10, 10, 1]  # Units in each network layer
@@ -25,9 +26,70 @@ l = 10  # Half-length of the domain
 sig_ext_t = 1j
 sig_ext_b = -1j
 
-sig_xx_target = torch.tensor([-0.0738, -0.0738, -0.0738, -0.0738])
-sig_yy_target = torch.tensor([1.0509, 1.0509, 1.0509, 1.0509])
-sig_xy_target = torch.tensor([-0.1081, 0.1081, 0.1081, -0.1081])
+# sig_xx_target = torch.tensor([-0.0738, -0.0738, -0.0738, -0.0738])
+# sig_yy_target = torch.tensor([1.0509, 1.0509, 1.0509, 1.0509])
+# sig_xy_target = torch.tensor([-0.1081, 0.1081, 0.1081, -0.1081])
+
+sig_xx_target = torch.tensor(
+    [
+        -0.0553,
+        -0.0054,
+        -0.0053,
+        -0.0550,
+        -0.0525,
+        -0.1066,
+        -0.1064,
+        -0.0521,
+        -0.0524,
+        -0.1066,
+        -0.1065,
+        -0.0521,
+        -0.0552,
+        -0.0054,
+        -0.0053,
+        -0.0550,
+    ]
+)
+sig_yy_target = torch.tensor(
+    [
+        1.0444,
+        0.8817,
+        0.8817,
+        1.0444,
+        1.1595,
+        0.9481,
+        0.9482,
+        1.1595,
+        1.1595,
+        0.9482,
+        0.9481,
+        1.1595,
+        1.0444,
+        0.8817,
+        0.8817,
+        1.0444,
+    ]
+)
+sig_xy_target = torch.tensor(
+    [
+        -0.0720,
+        -0.1372,
+        0.1378,
+        0.0725,
+        -0.0093,
+        -0.2979,
+        0.2983,
+        0.0097,
+        0.0095,
+        0.2982,
+        -0.2981,
+        -0.0094,
+        0.0722,
+        0.1374,
+        -0.1375,
+        -0.0722,
+    ]
+)
 
 z1 = 0 - 0j
 z2 = 3 + 0j
@@ -54,7 +116,8 @@ boundary = geom.boundary(
 )
 
 # === Training loop over multiple runs ===
-n_runs = 10  # number of repetitions
+# n_runs = 10  # number of repetitions
+n_runs = 1  # TODO: Remove line after debugging
 
 final_losses_train = []
 final_losses_test = []
@@ -82,12 +145,12 @@ for i in range(n_runs):
         enrichment="rice",
     )
 
-    model = nn_devo.enriched_PIHNN_devo("km", units, boundary)
+    model = nn_devo.enriched_pihnn_devo("km", units, boundary)
     model.initialize_weights(
         "exp", beta, boundary.extract_points(10 * np_train)[0], gauss
     )
 
-    loss_train, loss_test, ListeZ1, ListeZ2 = utils_devo.train_devo_adam(
+    loss_train, loss_test, z1_list, z2_list = utils_devo.train_devo_adam(
         sig_xx_target,
         sig_yy_target,
         sig_xy_target,
@@ -97,6 +160,7 @@ for i in range(n_runs):
         learn_rate,
         scheduler_apply,
         scheduler_gamma=0.5,
+        dir="../test/find_cracks_pihnn/",
     )
 
     # We keep the last values
