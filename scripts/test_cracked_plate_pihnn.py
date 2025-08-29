@@ -17,8 +17,7 @@ import pihnn_devo.utils as utils_devo
 import pihnn_devo.graphics as graphics_devo
 
 # Network parameters
-# n_epochs = 6000  # Number of epochs
-n_epochs = 10  # TODO: remove after debugging
+n_epochs = 6000  # Number of epochs
 learn_rate = 1e-5  # initial learning rate
 scheduler_apply = [500, 1000, 1500]
 units = [1, 10, 10, 10, 1]  # units in each network layer
