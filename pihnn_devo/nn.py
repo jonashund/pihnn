@@ -9,7 +9,7 @@ device = set_device()  # Shared with other scripts of the library
 
 class enriched_pihnn_devo(nn.DD_PIHNN):
     """
-    This PIHNN class builds on the enriched_PIHNN class from Matteo Calafà's pihnn package
+    This class of PIHNNs inherits from the DD_PIHNN class of Matteo Calafà's pihnn.nn module
     """
 
     def __init__(
