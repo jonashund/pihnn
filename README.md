@@ -2,8 +2,8 @@ This project is a continuation of the [PIHNN project](https://github.com/teocala
 
 The extensions are work in progress by Nicolas Cuenca, Jonas Hund, and Tito Andriollo.
 
-TO DO:
-- Class enriched_PIHNN_devo has to inherit from class DD_PIHNN from the nn module of package pihnn.
-- I do not understand the script to run the cracked plate test. In my environment, the test fails because mismatched dimensions of target values and computed values.
-- The number of given data point coordinates has to match the number of precribed stress values.
-- The x- and y-coordinates have to be passed on as lists to the "train_devo_adam" method as the calculation of "data_loss" requires the coordinates of the points at which the loss shall be evaluated. (This interpretation of the current code needs to be checked.) 
+Questions and Remarks:
+- I do not understand the script to run the cracked plate test. In my environment, the test failed because mismatched dimensions of target values and computed values: The number of given data point coordinates has to match the number of precribed stress values.
+- Accordingly, I changed some functions arguments'. The x- and y-coordinates of the points where the stress is evaluated now have to be passed on as lists to the "train_devo_adam" method as the calculation of "data_loss" requires the coordinates.
+- In which order have the scripts to be run to yield meaningful results and what are the corresponding parameters? The target values for the stresses are currently manually added in, I assume?
+- Are the target values extracted from Abaqus simulations at this stage? 
