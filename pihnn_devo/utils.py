@@ -6,22 +6,24 @@ from tqdm import tqdm
 import os
 
 
-def PIHNNloss_devo(sig_xx_target, sig_yy_target, sig_xy_target, boundary, model, t):
+def pihnn_loss_devo(
+    sig_xx_target, sig_yy_target, sig_xy_target, x_coords, y_coords, boundary, model, t
+):
     """
     Combined loss = boundary_loss (km_loss) + domain/points_loss (data_loss)
     """
+
     if model.PDE in ["km", "km-so"]:
         loss_bc = utils.km_loss(boundary, model, t)
         loss_data = data_loss(
+            model=model,
             sig_xx_target=sig_xx_target,
             sig_yy_target=sig_yy_target,
             sig_xy_target=sig_xy_target,
-            model=model,
+            x_coords=x_coords,
+            y_coords=y_coords,
         )
         loss_reg = reg_loss(model=model)
-        print("loss_bc : ", loss_bc)
-        print("loss_data : ", 1.0e-2 * loss_data)
-        print("loss_reg : ", loss_reg)
 
         return 1.0e0 * loss_bc + 1.0e-2 * loss_data + 1.0e2 * loss_reg
     elif model.PDE in ["laplace", "biharmonic"]:
@@ -32,38 +34,51 @@ def PIHNNloss_devo(sig_xx_target, sig_yy_target, sig_xy_target, boundary, model,
         )
 
 
-def data_loss(sig_xx_target, sig_yy_target, sig_xy_target, model, weight_xy=1):
+def data_loss(
+    model,
+    sig_xx_target,
+    sig_yy_target,
+    sig_xy_target,
+    x_coords,
+    y_coords,
+    l_norm=10,
+    weight_xy=1,
+):
     """
     Compute the loss (MSE) on fixed data points, weighted by sigma_xy.
 
     :sig_xx_target: target values for sigma_xx at data points
     :sig_yy_target: target values for sigma_yy at data points
     :sig_xy_target: target values for sigma_xy at data points
+    :param x_vals: x-coordinates of data points, optional, default is [-6,-3,3,6]
+    :param y_vals: y-coordinates of data points, optional, default is [6,3,-3,-6]
     :model: neural network model
     :param weight_xy: weight for sigma_xy, optional, default is 1
+    :l_norm: normalization length for coordinates, default is 10
     :returns: MSE loss value
     """
-    l = 10
-
-    x_vals = torch.tensor([-6.0, -3.0, 3.0, 6.0])
-    y_vals = torch.tensor([6.0, 3.0, -3.0, -6.0])
 
     # normalize the coordinates
-    x_vals_norm = x_vals / l
-    y_vals_norm = y_vals / l
+    x_coords_norm = x_coords / l_norm
+    y_coords_norm = y_coords / l_norm
 
     # build z_data with normalized coordinates
-    z_data = torch.cat([x_vals_norm + 1j * y for y in y_vals_norm])
+    z_data = torch.tensor(
+        [x_coords_norm[i] + 1j * y_coords_norm[i] for i in range(x_coords_norm.numel())]
+    )
     z_data = z_data.to(torch.cfloat).requires_grad_(True)
 
     sig_xx, sig_yy, sig_xy, _, _ = model(z_data, real_output=True)
 
-    # Weighted MSE loss
-    L = utils.MSE(value=sig_xx, true_value=sig_xx_target)
-    L += utils.MSE(sig_yy, sig_yy_target)
-    L += weight_xy * utils.MSE(sig_xy, sig_xy_target)
+    print(sig_xx.size())
+    print(sig_xx_target.size())
 
-    return L / z_data.nelement()
+    # Weighted MSE loss
+    data_loss = utils.MSE(value=sig_xx, true_value=sig_xx_target)
+    data_loss += utils.MSE(sig_yy, sig_yy_target)
+    data_loss += weight_xy * utils.MSE(sig_xy, sig_xy_target)
+
+    return data_loss / z_data.nelement()
 
 
 def reg_loss(model, limit=1, weight=100.0):
@@ -93,6 +108,8 @@ def train_devo_adam(
     sig_xx_target,
     sig_yy_target,
     sig_xy_target,
+    x_coords,
+    y_coords,
     boundary,
     model,
     n_epochs,
@@ -108,6 +125,8 @@ def train_devo_adam(
     :sig_xx_target: target values for sigma_xx at data points.
     :sig_yy_target: target values for sigma_yy at data points.
     :sig_xy_target: target values for sigma_xy at data points.
+    :param x_coords: x-coordinates of data points.
+    :param y_coords: y-coordinates of data points.
     :param boundary: Domain boundary, needed to extract training and test points.
     :type boundary: :class:`pihnn.geometries.boundary`
     :param model: Neural network model.
@@ -173,8 +192,8 @@ def train_devo_adam(
         z1_list.append(z1)
         z2_list.append(z2)
 
-        print("z1 : ", z1)
-        print("z2 : ", z2)
+        print("z1 = ", z1)
+        print("z2 = ", z2)
 
         if epoch_id == apply_adaptive_sampling and epoch_id != 0:
             utils.RAD_sampling(boundary, model)
@@ -182,21 +201,32 @@ def train_devo_adam(
         optimizer.zero_grad()
         model.zero_grad()
 
-        loss = PIHNNloss_devo(
+        loss = pihnn_loss_devo(
             sig_xx_target=sig_xx_target,
             sig_yy_target=sig_yy_target,
             sig_xy_target=sig_xy_target,
+            x_coords=x_coords,
+            y_coords=y_coords,
             boundary=boundary,
             model=model,
             t="training",
         )
+        # loss = utils.PIHNNloss(boundary=boundary, model=model, t="training")
         loss.backward(retain_graph=True)
         optimizer.step()
 
         loss_epochs.append(loss.cpu().item())
-        loss_test = PIHNNloss_devo(
-            sig_xx_target, sig_yy_target, sig_xy_target, boundary, model, "test"
+        loss_test = pihnn_loss_devo(
+            sig_xx_target,
+            sig_yy_target,
+            sig_xy_target,
+            x_coords,
+            y_coords,
+            boundary,
+            model,
+            "test",
         )
+        # loss_test = utils.PIHNNloss(boundary=boundary, model=model, t="test")
         loss_epochs_test.append(loss_test.cpu().item())
 
         with torch.autograd.no_grad():
@@ -259,7 +289,7 @@ def train_devo_L_BFGS(
         def closure():
             optimizer.zero_grad()
             model.zero_grad()
-            loss = PIHNNloss_devo(
+            loss = pihnn_loss_devo(
                 sig_xx_target, sig_yy_target, sig_xy_target, boundary, model, "training"
             )
             loss.backward(retain_graph=True)
@@ -269,7 +299,7 @@ def train_devo_L_BFGS(
 
         # save the losses
         loss_epochs.append(loss.cpu().item())
-        loss_test = PIHNNloss_devo(
+        loss_test = pihnn_loss_devo(
             sig_xx_target, sig_yy_target, sig_xy_target, boundary, model, "test"
         )
         loss_epochs_test.append(loss_test.cpu().item())
