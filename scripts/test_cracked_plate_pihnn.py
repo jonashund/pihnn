@@ -14,7 +14,6 @@ import pihnn.graphics as graphics
 import pihnn.bc as bc
 import pihnn_devo.nn as nn_devo
 import pihnn_devo.utils as utils_devo
-import pihnn_devo.graphics as graphics_devo
 
 # Network parameters
 n_epochs = 6000  # Number of epochs
@@ -33,20 +32,10 @@ h = 10  # 0.5*height of the domain
 l = 10  # 0.5*length of the domain
 n_segments = 50  # number of segments for each line
 
-# imposed constraints on top and bottom (traction/pure vertical compression)
-sig_ext_t = 1j  # traction on top: σ_yy = +1
-sig_ext_b = -1j  # traction on bottom: σ_yy = -1
-
-line1 = geom.line(P1=[-l, -h], P2=[l, -h], bc_type=bc.stress_bc(), bc_value=sig_ext_b)
-line2 = geom.line(P1=[l, -h], P2=[l, h], bc_type=bc.stress_bc(), bc_value=0 + 0j)
-line3 = geom.line(P1=[-l, h], P2=[l, h], bc_type=bc.stress_bc(), bc_value=sig_ext_t)
-line4 = geom.line(P1=[-l, h], P2=[-l, -h], bc_type=bc.stress_bc(), bc_value=0 + 0j)
-
-# Where are the data points located?
-# The point_loss relies on the data points to which the stress values are prescribed.
+# point coordinates where stress is evaluated
 x_vals = torch.tensor([-6.0, -3.0, 3.0, 6.0, -6.0, -3.0, 3.0, 6.0])
 y_vals = torch.tensor([6.0, 3.0, -3.0, -6.0, -6.0, -3.0, 3.0, 6.0])
-
+# stress values
 sig_xx_target = torch.tensor(
     [-0.0853, 0.0067, 0.0068, -0.0859, -0.0860, 0.0076, 0.0087, -0.0836]
 )
@@ -56,6 +45,10 @@ sig_yy_target = torch.tensor(
 sig_xy_target = torch.tensor(
     [0.0538, 0.2477, -0.2496, -0.0526, -0.0532, -0.2485, 0.2490, 0.0531]
 )
+
+# imposed constraints on top and bottom (traction/pure vertical compression)
+sig_ext_t = 1j  # traction on top: σ_yy = +1
+sig_ext_b = -1j  # traction on bottom: σ_yy = -1
 
 line1 = geom.line(P1=[-l, -h], P2=[l, -h], bc_type=bc.stress_bc(), bc_value=sig_ext_b)
 line2 = geom.line(P1=[l, -h], P2=[l, h], bc_type=bc.stress_bc(), bc_value=0 + 0j)
