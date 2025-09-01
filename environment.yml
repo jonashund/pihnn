@@ -6,17 +6,12 @@ channels:
 
 dependencies:
   - python>=3.10
-  - pip
-  - pip:
-      - torch --index-url https://download.pytorch.org/whl/cu12.4
-      - git+https://github.com/teocala/pihnn.git
-  - conda-build
-  - conda-verify
-  - sphinx
-  - pydata-sphinx-theme
-  - sphinx-autoapi
-  - sphinxcontrib-youtube
-  - tqdm
   - matplotlib>=3.5.0
   - numpy>=1.22.0
   - scipy>=1.9.0
+  - tqdm
+  - pip
+  - pip:
+      - torch
+      - torchvision
+      - git+https://github.com/teocala/pihnn.git
