@@ -47,16 +47,21 @@ def data_loss(
     """
     Compute the loss (MSE) on fixed data points, weighted by sigma_xy.
 
+    :model: neural network model
     :sig_xx_target: target values for sigma_xx at data points
     :sig_yy_target: target values for sigma_yy at data points
     :sig_xy_target: target values for sigma_xy at data points
-    :param x_vals: x-coordinates of data points, optional, default is [-6,-3,3,6]
-    :param y_vals: y-coordinates of data points, optional, default is [6,3,-3,-6]
-    :model: neural network model
+    :param x_coords: x-coordinates of data points
+    :param y_coords: y-coordinates of data points
     :param weight_xy: weight for sigma_xy, optional, default is 1
     :l_norm: normalization length for coordinates, default is 10
     :returns: MSE loss value
     """
+
+    if not type(x_coords) in [torch.Tensor]:
+        x_coords = torch.tensor(x_coords)
+    if not type(y_coords) in [torch.Tensor]:
+        y_coords = torch.tensor(y_coords)
 
     # normalize the coordinates
     x_coords_norm = x_coords / l_norm
@@ -69,9 +74,6 @@ def data_loss(
     z_data = z_data.to(torch.cfloat).requires_grad_(True)
 
     sig_xx, sig_yy, sig_xy, _, _ = model(z_data, real_output=True)
-
-    print(sig_xx.size())
-    print(sig_xx_target.size())
 
     # Weighted MSE loss
     data_loss = utils.MSE(value=sig_xx, true_value=sig_xx_target)
@@ -281,8 +283,8 @@ def train_devo_L_BFGS(
         model.update_boundary()
         z1_list.append(z1)
         z2_list.append(z2)
-        print("z1 : ", z1)
-        print("z2 : ", z2)
+        print("z1 = ", z1)
+        print("z2 = ", z2)
         if epoch_id == apply_adaptive_sampling and epoch_id != 0:
             utils.RAD_sampling(boundary, model)
 
