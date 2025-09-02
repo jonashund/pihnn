@@ -4,6 +4,7 @@ import pihnn.utils as utils
 import numpy as np
 from tqdm import tqdm
 import os
+import importlib.util
 
 
 def pihnn_loss_devo(
@@ -328,3 +329,24 @@ def train_devo_L_BFGS(
     torch.save(model.state_dict(), dir + "model.dict")
 
     return loss_epochs, loss_epochs_test, z1_list, z2_list
+
+
+def export_network_params(
+    params_dict,
+    out_filename="network_params.py",
+    out_dir="./results/",
+):
+    params_file = out_dir + out_filename
+    with open(params_file, "w") as f:
+        f.write("# Network parameters\n")
+        for k, v in params_dict.items():
+            f.write(f"{k} = {repr(v)}\n")
+
+
+def import_network_params(filename="network_params.py", dir="./results/"):
+    params_file = os.path.join(dir, filename)
+    spec = importlib.util.spec_from_file_location("network_params", params_file)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    params_dict = {k: getattr(module, k) for k in dir(module) if not k.startswith("__")}
+    return params_dict
