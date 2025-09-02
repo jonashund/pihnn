@@ -16,17 +16,21 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = (
     "True"  # set environment variable to avoid error message
 )
 
+out_dir = "../test/s01_collect_data_pihnn/"
+if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
 
-# network parameters
-n_epochs = 5000  # number of epochs
-# n_epochs = 10  # number of epochs
-learn_rate = 1e-3  # initial learning rate
-scheduler_apply = [2000, 4500, 7000, 8000, 9500]
-units = [1, 10, 10, 10, 1]  # units in each network layer
-np_train = 250  # number of training points on domain boundary
-np_test = 20  # number of test points on the domain boundary
-beta = 0.5  # initialization parameter
-gauss = 3  # initialization parameter
+network_params = {
+    "n_epochs": 5000,
+    "learn_rate": 1e-3,
+    "scheduler_apply": [2000, 4500, 7000, 8000, 9500],
+    "units": [1, 10, 10, 10, 1],
+    "np_train": 250,
+    "np_test": 20,
+    "beta": 0.5,
+    "gauss": 3,
+}
+utils_devo.export_network_params(params_dict=network_params, out_dir=out_dir)
 
 h = 10  # half-height of the domain
 l = 10  # half-length of the domain
@@ -56,27 +60,32 @@ crack.add_crack_tip(tip_side=1)  # Right tip
 # Construction of the complete boundary with Rice-type XFEM enrichment
 boundary = geom.boundary(
     curves=[line1, line2, line3, line4, crack],
-    np_train=np_train,
-    np_test=np_test,
+    np_train=network_params["np_train"],
+    np_test=network_params["np_test"],
     enrichment="rice",
 )
 
 # Definition of NN
-model = nn.enriched_PIHNN("km", units, boundary)
+model = nn.enriched_PIHNN("km", network_params["units"], boundary)
 
-model.initialize_weights("exp", beta, boundary.extract_points(10 * np_train)[0], gauss)
+model.initialize_weights(
+    "exp",
+    network_params["beta"],
+    boundary.extract_points(10 * network_params["np_train"])[0],
+    network_params["gauss"],
+)
 loss_train, loss_test = utils.train(
     boundary=boundary,
     model=model,
-    n_epochs=n_epochs,
-    learn_rate=learn_rate,
-    scheduler_apply=scheduler_apply,
-    dir="../test/collect_data_pihnn/",  # TODO: Change directory
+    n_epochs=network_params["n_epochs"],
+    learn_rate=network_params["learn_rate"],
+    scheduler_apply=network_params["scheduler_apply"],
+    dir=out_dir,
 )
-graphics.plot_loss(loss_train, loss_test, dir="../test/collect_data_pihnn/")
+graphics.plot_loss(loss_train, loss_test, dir=out_dir)
 tria = graphics.get_triangulation(boundary)
 graphics.plot_sol(
-    tria, model, apply_crack_bounds=True, dir="../test/collect_data_pihnn/"
+    tria, model, apply_crack_bounds=True, dir=out_dir
 )  # We bound the crack singularities for the plot
 
 x_vals = torch.tensor([-6.0, -3.0, 3.0, 6.0])
@@ -94,14 +103,12 @@ z_data = z_data.to(torch.cfloat).requires_grad_(True)
 sig_xx_target, sig_yy_target, sig_xy_target, _, _ = model(z_data, real_output=True)
 
 # export data to text file
-output_dir = "../test/collect_data_pihnn/"
-
 data = torch.stack((sig_xx_target, sig_yy_target, sig_xy_target), dim=1)
 data_np = data.detach().numpy()
-output_file = output_dir + "stress_data.txt"
+output_file = out_dir + "stress_data.txt"
 np.savetxt(output_file, data_np, header="sig_xx, sig_yy, sig_xy")
 
 x_coords = (z_data.real).detach().numpy()
 y_coords = (z_data.imag).detach().numpy()
-coords_file = output_dir + "coords_data.txt"
+coords_file = out_dir + "coords_data.txt"
 np.savetxt(coords_file, [x_coords, y_coords], header="x, y")
