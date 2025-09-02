@@ -1,5 +1,5 @@
-./test/
-./delete/
+./test/*
+./delete/*
 
 # Python cache files
 *__pycache__
