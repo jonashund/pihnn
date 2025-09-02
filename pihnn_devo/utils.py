@@ -62,6 +62,12 @@ def data_loss(
         x_coords = torch.tensor(x_coords)
     if not type(y_coords) in [torch.Tensor]:
         y_coords = torch.tensor(y_coords)
+    if not type(sig_xx_target) in [torch.Tensor]:
+        sig_xx_target = torch.tensor(sig_xx_target)
+    if not type(sig_yy_target) in [torch.Tensor]:
+        sig_yy_target = torch.tensor(sig_yy_target)
+    if not type(sig_xy_target) in [torch.Tensor]:
+        sig_xy_target = torch.tensor(sig_xy_target)
 
     # normalize the coordinates
     x_coords_norm = x_coords / l_norm

@@ -3,20 +3,21 @@ Test from Section 4.2 in https://doi.org/10.1016/j.engfracmech.2025.111133
 """
 
 import os
-
-os.environ["KMP_DUPLICATE_LIB_OK"] = (
-    "True"  # set environment variable to avoid error message
-)
-
 import torch
+import numpy as np
 import pihnn.geometries as geom
 import pihnn.graphics as graphics
 import pihnn.bc as bc
 import pihnn_devo.nn as nn_devo
 import pihnn_devo.utils as utils_devo
 
+os.environ["KMP_DUPLICATE_LIB_OK"] = (
+    "True"  # set environment variable to avoid error message
+)
+
 # Network parameters
-n_epochs = 6000  # Number of epochs
+# n_epochs = 6000  # Number of epochs
+n_epochs = 6  # Number of epochs
 learn_rate = 1e-5  # initial learning rate
 scheduler_apply = [500, 1000, 1500]
 units = [1, 10, 10, 10, 1]  # units in each network layer
@@ -32,19 +33,15 @@ h = 10  # 0.5*height of the domain
 l = 10  # 0.5*length of the domain
 n_segments = 50  # number of segments for each line
 
-# point coordinates where stress is evaluated
-x_vals = torch.tensor([-6.0, -3.0, 3.0, 6.0, -6.0, -3.0, 3.0, 6.0])
-y_vals = torch.tensor([6.0, 3.0, -3.0, -6.0, -6.0, -3.0, 3.0, 6.0])
-# stress values
-sig_xx_target = torch.tensor(
-    [-0.0853, 0.0067, 0.0068, -0.0859, -0.0860, 0.0076, 0.0087, -0.0836]
-)
-sig_yy_target = torch.tensor(
-    [1.1788, 0.8001, 0.7978, 1.1751, 1.1767, 0.8000, 0.7986, 1.1748]
-)
-sig_xy_target = torch.tensor(
-    [0.0538, 0.2477, -0.2496, -0.0526, -0.0532, -0.2485, 0.2490, 0.0531]
-)
+# import stress data and coordinates from text files
+data_dir = "../test/collect_data_pihnn/"
+stress_file = data_dir + "stress_data.txt"
+coords_file = data_dir + "coords_data.txt"
+stress_data = np.loadtxt(stress_file, skiprows=1)  # Skip header row
+coords_data = np.loadtxt(coords_file, skiprows=1)
+
+stress_data = torch.Tensor(stress_data)
+coords_data = torch.Tensor(coords_data)
 
 # imposed constraints on top and bottom (traction/pure vertical compression)
 sig_ext_t = 1j  # traction on top: σ_yy = +1
@@ -78,11 +75,11 @@ model.initialize_weights(
     gauss=gauss_param,
 )
 loss_train, loss_test, _, _ = utils_devo.train_devo_adam(
-    sig_xx_target=sig_xx_target,
-    sig_yy_target=sig_yy_target,
-    sig_xy_target=sig_xy_target,
-    x_coords=x_vals,
-    y_coords=y_vals,
+    sig_xx_target=stress_data[:, 0],
+    sig_yy_target=stress_data[:, 1],
+    sig_xy_target=stress_data[:, 2],
+    x_coords=coords_data[0],
+    y_coords=coords_data[1],
     boundary=boundary,
     model=model,
     n_epochs=n_epochs,
@@ -91,13 +88,14 @@ loss_train, loss_test, _, _ = utils_devo.train_devo_adam(
     scheduler_gamma=0.5,
     dir="../test/test_cracked_plate_phinn/",
 )
-graphics.plot_loss(
-    loss_train=loss_train, loss_test=loss_test, dir="../test/test_cracked_plate_phinn/"
-)
+
 tria = graphics.get_triangulation(boundary)
 graphics.plot_sol(
     triangulation=tria,
     model=model,
     apply_crack_bounds=True,
     dir="../test/test_cracked_plate_phinn/",
+)
+graphics.plot_loss(
+    loss_train=loss_train, loss_test=loss_test, dir="../test/test_cracked_plate_phinn/"
 )

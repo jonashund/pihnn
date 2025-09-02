@@ -2,7 +2,9 @@
 Test from Section 4.2 in https://doi.org/10.1016/j.engfracmech.2025.111133
 """
 
+import os
 import torch
+import numpy as np
 import pihnn.nn as nn
 import pihnn.geometries as geom
 import pihnn.graphics as graphics
@@ -10,8 +12,14 @@ import pihnn.bc as bc
 import pihnn.utils as utils
 import pihnn_devo.utils as utils_devo
 
+os.environ["KMP_DUPLICATE_LIB_OK"] = (
+    "True"  # set environment variable to avoid error message
+)
+
+
 # network parameters
-n_epochs = 10000  # number of epochs
+# n_epochs = 5000  # number of epochs
+n_epochs = 10  # number of epochs
 learn_rate = 1e-3  # initial learning rate
 scheduler_apply = [2000, 4500, 7000, 8000, 9500]
 units = [1, 10, 10, 10, 1]  # units in each network layer
@@ -65,10 +73,10 @@ loss_train, loss_test = utils.train(
     scheduler_apply=scheduler_apply,
     dir="../test/collect_data_pihnn/",  # TODO: Change directory
 )
-graphics.plot_loss(loss_train, loss_test)
+graphics.plot_loss(loss_train, loss_test, dir="../test/collect_data_pihnn/")
 tria = graphics.get_triangulation(boundary)
 graphics.plot_sol(
-    tria, model, apply_crack_bounds=True
+    tria, model, apply_crack_bounds=True, dir="../test/collect_data_pihnn/"
 )  # We bound the crack singularities for the plot
 
 x_vals = torch.tensor([-6.0, -3.0, 3.0, 6.0])
@@ -85,6 +93,15 @@ z_data = z_data.to(torch.cfloat).requires_grad_(True)
 # Expected values (e.g. zero stress at free points)
 sig_xx_target, sig_yy_target, sig_xy_target, _, _ = model(z_data, real_output=True)
 
-print("sig_xx_target : ", sig_xx_target)
-print("sig_yy_target : ", sig_yy_target)
-print("sig_xy_target : ", sig_xy_target)
+# export data to text file
+output_dir = "../test/collect_data_pihnn/"
+
+data = torch.stack((sig_xx_target, sig_yy_target, sig_xy_target), dim=1)
+data_np = data.detach().numpy()
+output_file = output_dir + "stress_data.txt"
+np.savetxt(output_file, data_np, header="sig_xx, sig_yy, sig_xy")
+
+x_coords = (z_data.real).detach().numpy()
+y_coords = (z_data.imag).detach().numpy()
+coords_file = output_dir + "coords_data.txt"
+np.savetxt(coords_file, [x_coords, y_coords], header="x, y")

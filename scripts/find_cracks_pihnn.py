@@ -2,14 +2,21 @@
 Test from Section 4.2 in https://doi.org/10.1016/j.engfracmech.2025.111133
 """
 
+import os
+import numpy as np
 import torch
 import pihnn.geometries as geom
 import pihnn.bc as bc
 import pihnn_devo.nn as nn_devo
 import pihnn_devo.utils as utils_devo
 
+os.environ["KMP_DUPLICATE_LIB_OK"] = (
+    "True"  # set environment variable to avoid error message
+)
+
 # Network parameters
-n_epochs = 500  # Number of epochs
+n_epochs = 5  # Number of epochs
+# n_epochs = 500  # Number of epochs
 learn_rate = 1e-3  # Initial learning rate
 scheduler_apply = []  # At which epoch to execute scheduler
 units = [1, 10, 10, 10, 1]  # Units in each network layer
@@ -25,70 +32,15 @@ l = 10  # Half-length of the domain
 sig_ext_t = 1j
 sig_ext_b = -1j
 
-# sig_xx_target = torch.tensor([-0.0738, -0.0738, -0.0738, -0.0738])
-# sig_yy_target = torch.tensor([1.0509, 1.0509, 1.0509, 1.0509])
-# sig_xy_target = torch.tensor([-0.1081, 0.1081, 0.1081, -0.1081])
+# import stress data and coordinates from text files
+data_dir = "../test/collect_data_pihnn/"
+stress_file = data_dir + "stress_data.txt"
+coords_file = data_dir + "coords_data.txt"
+stress_data = np.loadtxt(stress_file, skiprows=1)  # Skip header row
+coords_data = np.loadtxt(coords_file, skiprows=1)
 
-sig_xx_target = torch.tensor(
-    [
-        -0.0553,
-        -0.0054,
-        -0.0053,
-        -0.0550,
-        -0.0525,
-        -0.1066,
-        -0.1064,
-        -0.0521,
-        -0.0524,
-        -0.1066,
-        -0.1065,
-        -0.0521,
-        -0.0552,
-        -0.0054,
-        -0.0053,
-        -0.0550,
-    ]
-)
-sig_yy_target = torch.tensor(
-    [
-        1.0444,
-        0.8817,
-        0.8817,
-        1.0444,
-        1.1595,
-        0.9481,
-        0.9482,
-        1.1595,
-        1.1595,
-        0.9482,
-        0.9481,
-        1.1595,
-        1.0444,
-        0.8817,
-        0.8817,
-        1.0444,
-    ]
-)
-sig_xy_target = torch.tensor(
-    [
-        -0.0720,
-        -0.1372,
-        0.1378,
-        0.0725,
-        -0.0093,
-        -0.2979,
-        0.2983,
-        0.0097,
-        0.0095,
-        0.2982,
-        -0.2981,
-        -0.0094,
-        0.0722,
-        0.1374,
-        -0.1375,
-        -0.0722,
-    ]
-)
+stress_data = torch.Tensor(stress_data)
+coords_data = torch.Tensor(coords_data)
 
 z1 = 0 - 0j
 z2 = 3 + 0j
@@ -115,8 +67,7 @@ boundary = geom.boundary(
 )
 
 # === Training loop over multiple runs ===
-# n_runs = 10  # number of repetitions
-n_runs = 1  # TODO: Remove line after debugging
+n_runs = 10  # number of repetitions
 
 final_losses_train = []
 final_losses_test = []
@@ -150,14 +101,16 @@ for i in range(n_runs):
     )
 
     loss_train, loss_test, z1_list, z2_list = utils_devo.train_devo_adam(
-        sig_xx_target,
-        sig_yy_target,
-        sig_xy_target,
-        boundary,
-        model,
-        n_epochs,
-        learn_rate,
-        scheduler_apply,
+        sig_xx_target=stress_data[:, 0],
+        sig_yy_target=stress_data[:, 1],
+        sig_xy_target=stress_data[:, 2],
+        x_coords=coords_data[0],
+        y_coords=coords_data[1],
+        boundary=boundary,
+        model=model,
+        n_epochs=n_epochs,
+        learn_rate=learn_rate,
+        scheduler_apply=scheduler_apply,
         scheduler_gamma=0.5,
         dir="../test/find_cracks_pihnn/",
     )
