@@ -15,8 +15,8 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = (
 )
 
 # Network parameters
-n_epochs = 5  # Number of epochs
-# n_epochs = 500  # Number of epochs
+# n_epochs = 5  # Number of epochs
+n_epochs = 500  # Number of epochs
 learn_rate = 1e-3  # Initial learning rate
 scheduler_apply = []  # At which epoch to execute scheduler
 units = [1, 10, 10, 10, 1]  # Units in each network layer
