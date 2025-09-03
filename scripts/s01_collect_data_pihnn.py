@@ -23,7 +23,7 @@ if not os.path.exists(out_dir):
 network_params = {
     "n_epochs": 5000,
     "learn_rate": 1e-3,
-    "scheduler_apply": [2000, 4500, 7000, 8000, 9500],
+    "scheduler_apply": [2000, 4500],
     "units": [1, 10, 10, 10, 1],
     "np_train": 250,
     "np_test": 20,
