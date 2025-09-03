@@ -12,7 +12,7 @@ authors = [
     { name = "Jonas Hund", email = "jonas.hund@mpe.au.dk" },
     { name = "Tito Andriollo", email = "titoan@mpe.au.dk" },
 ]
-description = "Physics-informed holomorphic neural networks"
+description = "Developments based on the Physics-informed holomorphic neural networks (PIHNN) package of Matteo Calafà"
 version = "1.0"
 readme = "README.md"
 license = { text = "LGPL-2.1" }
